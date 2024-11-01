@@ -38,6 +38,7 @@ CPU 이용률은 얼마가 되어야 하는가<br />
 (-l 1:0,4:200 -c -S SWITCH_ON_END)<br />
 
 풀이 : 다시 순서를 안바꿨을때 만큼 속도가 걸릴것 같다.
+
 ![image](https://github.com/user-attachments/assets/4278a0a5-3863-49a7-adc7-3e7e85e68c83)
 
 5. 이번에는 프로세스가 입출력을 기다릴 때마다<br />
@@ -81,3 +82,7 @@ CPU 이용률은 얼마가 되어야 하는가<br />
 -S SWITCH_ON_IO 대 -S SWITCH_ON_END의 경우에는 어떤 결과가 나오는가?<br />
 
 풀이 : 
+SWITCH_ON_END 일때는 요청 프로세스가 종료될때까지 기다리므로 입출력이나 명령어 처리동안 계속 놀게된다.<br />
+SWITCH_ON_IO 일때는 동시에 처리하므로 입출력이 두개 동시에 돌아가는 경우도 있다.<br />
+의외로 입출력 실행을 언제 하냐는 별 차이가 없다.<br />
+단지SWITCH_ON_IO가 바로 실행해서 살짝 빠르다<br />
