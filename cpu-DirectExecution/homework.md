@@ -1,79 +1,44 @@
 ```c
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/time.h>
-#include <sys/syscall.h>
+#include <unistd.h>
 
-// 반복 횟수
-#define LOOPS 1000000
-
-long get_elapsed_usec(struct timeval start, struct timeval end) {
-    return (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_usec - start.tv_usec);
+long toMicroSecond(struct timeval start) {
+    return start.tv_sec * 1000 * 1000 + start.tv_usec;
 }
 
-int main() {
-    struct timeval start, end;
-    long elapsed;
-    int i;
-    
-    // ==========================================
-    // 시스템 콜 비용 측정
-    // ==========================================
-    printf("Measuring System Call Cost...\n");
-    
+long calculateSystemCallDuration() {
+    struct timeval start;
+    struct timeval end;
+
+    int fd[2];
+    char c;
+
+    pipe(fd);
+    write(fd[1], "test message", sizeof("test message"));
     gettimeofday(&start, NULL);
-    for (i = 0; i < LOOPS; i++) {
-        read(STDIN_FILENO, NULL, 0); 
-    }
+    read(fd[0], &c, 0);
     gettimeofday(&end, NULL);
 
-    elapsed = get_elapsed_usec(start, end);
-    printf("Total time for %d syscalls: %ld us\n", LOOPS, elapsed);
-    printf("Average time per syscall: %f us\n\n", (float)elapsed / LOOPS);
+    return toMicroSecond(end) - toMicroSecond(start);
+}
 
+long calculateContextSwitchDuration() {
+    struct timeval start;
+    struct timeval end;
 
-    // ==========================================
-    // 문맥 교환 비용 측정
-    // ==========================================
-    printf("Measuring Context Switch Cost...\n");
+    gettimeofday(&start, NULL);
+    usleep(0);
+    gettimeofday(&end, NULL);
 
-    int pipe1[2], pipe2[2];
-    char buf = 'x';
+    return toMicroSecond(end) - toMicroSecond(start);
+}
 
-    if (pipe(pipe1) < 0 || pipe(pipe2) < 0) {
-        perror("pipe");
-        exit(1);
-    }
-
-    pid_t rc = fork();
-
-    if (rc < 0) {
-        perror("fork");
-        exit(1);
-    } else if (rc == 0) {
-        // [자식 프로세스]
-        for (i = 0; i < LOOPS; i++) {
-            read(pipe1[0], &buf, 1);
-            write(pipe2[1], &buf, 1);
-        }
-        exit(0);
-    } else {
-        // [부모 프로세스]
-        gettimeofday(&start, NULL);
-        for (i = 0; i < LOOPS; i++) {
-            write(pipe1[1], &buf, 1);
-            read(pipe2[0], &buf, 1);
-        }
-        gettimeofday(&end, NULL);
-
-        elapsed = get_elapsed_usec(start, end);
-        printf("Total time for %d loop iterations: %ld us\n", LOOPS, elapsed);
-        printf("Average time per Context Switch: %f us\n", (float)elapsed / (LOOPS * 2));
-    }
-
-    return 0;
+int main(int argc, char* argv[]) {
+    printf("system call duration: %ld\n", calculateSystemCallDuration()); // 대략 0 ~ 1 마이크로초
+    printf("context switch duration: %ld\n", calculateContextSwitchDuration()); // 대략 70 마이크로초
 }
 ```
-<img width="381" height="113" alt="image" src="https://github.com/user-attachments/assets/972277d0-7df7-4f48-9c36-fe1c9c612edd" />
+어느정도의 마이크로초를 소비한다.
 
